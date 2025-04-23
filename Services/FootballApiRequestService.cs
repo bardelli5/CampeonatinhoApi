@@ -13,15 +13,19 @@ namespace CampeonatinhoApp.Services
     public class FootballApiRequestService
     {
         private readonly CampeonatinhoDbContext _dbContext;
-        private readonly LeagueRepository _leagueRepository;
-        private readonly CountryRepository _countryRepository;
+        private readonly ILeagueRepository _leagueRepository;
+        private readonly ICountryRepository _countryRepository;
 
-        public FootballApiRequestService(CampeonatinhoDbContext context, LeagueRepository leagueRepository, CountryRepository countryRepository)
+        public FootballApiRequestService(
+            CampeonatinhoDbContext context,
+            ILeagueRepository leagueRepository,
+            ICountryRepository countryRepository)
         {
             _dbContext = context;
             _leagueRepository = leagueRepository;
             _countryRepository = countryRepository;
         }
+
 
         public IResult GetApiDataLeagues()
         {
