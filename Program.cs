@@ -29,7 +29,7 @@ using (var scope = app.Services.CreateScope())
     var apiService = services.GetRequiredService<FootballApiRequestService>();
     var dbContextService = services.GetRequiredService<CampeonatinhoDbContext>();
 
-    var jsonData = apiService.GetApiDataLeagues();
+    var jsonData = apiService.GetApiDataLeaguesAsync();
 }
 
 //using (var scope = app.Services.CreateScope())

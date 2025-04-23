@@ -5,15 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CampeonatinhoApp.Repositories
 {
-    public class CountryRepository : GenericRepository<CountryRepository>, ICountryRepository
+    public class CountryRepository : GenericRepository<Country>, ICountryRepository
     {
-        protected readonly DbContext _context;
-        protected readonly DbSet<Country> _dbSet;
-
         public CountryRepository(CampeonatinhoDbContext context) : base(context)
         {
-            _context = context;
-            _dbSet = context.Set<Country>();
         }
 
         public Task<Country> GetByName(string name)

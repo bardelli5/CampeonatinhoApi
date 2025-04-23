@@ -27,7 +27,7 @@ namespace CampeonatinhoApp.Services
         }
 
 
-        public IResult GetApiDataLeagues()
+        public async Task<IResult> GetApiDataLeaguesAsync()
         {
             try
             {
@@ -42,11 +42,16 @@ namespace CampeonatinhoApp.Services
 
                 foreach (JToken result in results)
                 {
-                    JToken leagueToken = result["league"];
                     JToken countryToken = result["country"];
-                    _countryRepository.GetByName("teste");
+                    JToken leagueToken = result["league"];
 
+                    Country c = JsonConvert.DeserializeObject<Country>(countryToken.ToString());
                     League l = JsonConvert.DeserializeObject<League>(leagueToken.ToString());
+
+                    //busca o country, recupera o CountryId para popular CountryId do objeto League
+                    var buscaCountry = _countryRepository.SearchAsync(x => x.Name == c.Name).GetAwaiter().GetResult();
+                    l.CountryId = buscaCountry.FirstOrDefault().Id;
+
                     _dbContext.Add(l);
                     _dbContext.SaveChanges();
                 }
