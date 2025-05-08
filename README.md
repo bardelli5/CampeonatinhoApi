@@ -1,5 +1,5 @@
 <h1 align="center">API Campeonatinho</h1>
-Esta é uma API RESTful desenvolvida em ASP.NET Core que serve como back-end para uma aplicação de gerenciamento de campeonatos de futebol virtual, como EA Sports FC (FIFA) e eFootball (PES).
+Esta é uma API REST desenvolvida em .NET Core que serve como back-end para uma aplicação de gerenciamento de campeonatos de futebol virtual, como EA Sports FC (FIFA) e eFootball (PES).
 
 A aplicação oferece endpoints para cadastro, consulta e relacionamento entre:
 
