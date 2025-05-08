@@ -17,8 +17,10 @@ namespace CampeonatinhoApp.Models
 
         [JsonProperty(PropertyName = "logo")]
         public string ImageUrl { get; set; }
-
         public int CountryId { get; set; }
+
+        [JsonProperty(PropertyName = "id")]
+        public int ApiId { get; set; }
 
 
         public Country Country { get; set; }

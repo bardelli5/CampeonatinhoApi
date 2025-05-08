@@ -13,6 +13,7 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<FootballApiRequestService>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
+builder.Services.AddScoped<IClubRepository, ClubRepository>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -29,7 +30,7 @@ using (var scope = app.Services.CreateScope())
     var apiService = services.GetRequiredService<FootballApiRequestService>();
     var dbContextService = services.GetRequiredService<CampeonatinhoDbContext>();
 
-    var jsonData = apiService.GetApiDataLeaguesAsync();
+    var jsonData = apiService.GetApiDataClubs();
 }
 
 //using (var scope = app.Services.CreateScope())
@@ -38,7 +39,7 @@ using (var scope = app.Services.CreateScope())
 //    var apiService = services.GetRequiredService<FootballApiRequestService>();
 //    var dbContextService = services.GetRequiredService<CampeonatinhoDbContext>();
 
-//    var jsonData = apiService.GetApiDataClubs();
+//    var jsonData = apiService.GetApiDataLeagues();
 //}
 
 //using (var scope = app.Services.CreateScope())

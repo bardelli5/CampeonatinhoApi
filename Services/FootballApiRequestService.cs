@@ -15,19 +15,22 @@ namespace CampeonatinhoApp.Services
         private readonly CampeonatinhoDbContext _dbContext;
         private readonly ILeagueRepository _leagueRepository;
         private readonly ICountryRepository _countryRepository;
+        private readonly IClubRepository _clubRepository;
 
         public FootballApiRequestService(
             CampeonatinhoDbContext context,
             ILeagueRepository leagueRepository,
-            ICountryRepository countryRepository)
+            ICountryRepository countryRepository,
+            IClubRepository clubRepository)
         {
             _dbContext = context;
             _leagueRepository = leagueRepository;
             _countryRepository = countryRepository;
+            _clubRepository = clubRepository;
         }
 
 
-        public async Task<IResult> GetApiDataLeaguesAsync()
+        public IResult GetApiDataLeagues()
         {
             try
             {
@@ -48,7 +51,6 @@ namespace CampeonatinhoApp.Services
                     Country c = JsonConvert.DeserializeObject<Country>(countryToken.ToString());
                     League l = JsonConvert.DeserializeObject<League>(leagueToken.ToString());
 
-                    //busca o country, recupera o CountryId para popular CountryId do objeto League
                     var buscaCountry = _countryRepository.SearchAsync(x => x.Name == c.Name).GetAwaiter().GetResult();
                     l.CountryId = buscaCountry.FirstOrDefault().Id;
 
@@ -64,13 +66,47 @@ namespace CampeonatinhoApp.Services
             return Results.Ok();
         }
 
-        public string GetApiDataClubs()
+        public IResult GetApiDataClubs()
         {
-            var client = new RestClient("https://v3.football.api-sports.io/teams?league=39&season=2023");
-            var request = new RestRequest().AddHeader("x-rapidapi-key", "01ab0dce91ecea8d9923643ad0d75f4c").AddHeader("x-rapidapi-host", "v3.football.api-sports.io");
-            var response = client.Execute(request);
+            try
+            {
+                var buscaLeague = _leagueRepository.GetAllAsync().GetAwaiter().GetResult().ToList();
 
-            return response.Content;
+                foreach (var liga in buscaLeague)
+                {
+                    var buscaClub = _clubRepository.GetByApiLeagueId(liga.ApiId).GetAwaiter().GetResult();
+                    if (buscaClub == null)
+                    {
+                        var client = new RestClient($"https://v3.football.api-sports.io/teams?league={liga.ApiId}&season=2023");
+                        var request = new RestRequest().AddHeader("x-rapidapi-key", "01ab0dce91ecea8d9923643ad0d75f4c").AddHeader("x-rapidapi-host", "v3.football.api-sports.io");
+                        var response = client.Execute(request);
+
+                        string jsonLeague = response.Content;
+                        JObject jsonLeagueParse = JObject.Parse(jsonLeague);
+                        IList<JToken> results = jsonLeagueParse["response"].Children().ToList();
+
+                        if (results.Count() > 0)
+                        {
+                            foreach (JToken result in results)
+                            {
+                                JToken clubToken = result["team"];
+                                Club cl = JsonConvert.DeserializeObject<Club>(clubToken.ToString());
+
+                                cl.LeagueId = liga.Id;
+                                cl.ApiLeagueId = liga.ApiId;
+                                _dbContext.Add(cl);
+                                _dbContext.SaveChanges();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest();
+            }
+
+            return Results.Ok();
         }
 
         public IResult GetApiDataCountries()
@@ -89,6 +125,11 @@ namespace CampeonatinhoApp.Services
                 foreach (JToken result in results)
                 {
                     Country c = JsonConvert.DeserializeObject<Country>(result.ToString());
+                    if (c.Abbreviation == null && c.FlagUrl == null)
+                    {
+                        c.Abbreviation = "WORLD";
+                        c.FlagUrl = "https://w7.pngwing.com/pngs/560/279/png-transparent-world-map-globe-map-projection-world-map-miscellaneous-globe-logo-thumbnail.png";
+                    }
                     _dbContext.Add(c);
                     _dbContext.SaveChanges();
                 }
