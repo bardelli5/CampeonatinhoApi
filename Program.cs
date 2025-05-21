@@ -1,13 +1,22 @@
 using System;
 using CampeonatinhoApp.Context;
 using CampeonatinhoApp.Interfaces;
+using CampeonatinhoApp.Models;
 using CampeonatinhoApp.Repositories;
 using CampeonatinhoApp.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<CampeonatinhoDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = false;
+})
+.AddEntityFrameworkStores<CampeonatinhoDbContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<FootballApiRequestService>();

@@ -1,10 +1,11 @@
 ﻿using System;
 using CampeonatinhoApp.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampeonatinhoApp.Context
 {
-    public class CampeonatinhoDbContext : DbContext
+    public class CampeonatinhoDbContext : IdentityDbContext<ApplicationUser>
     {
         public DbSet<Country> Countries { get; set; }
         public DbSet<League> Leagues { get; set; }
@@ -22,6 +23,8 @@ namespace CampeonatinhoApp.Context
                 .HasMany(l => l.Clubs)
                 .WithOne(c => c.League)
                 .HasForeignKey(c => c.LeagueId);
+
+            base.OnModelCreating(modelBuilder);
         }
 
     }
