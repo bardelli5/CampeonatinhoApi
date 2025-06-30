@@ -8,8 +8,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+DotNetEnv.Env.Load();
 
-builder.Services.AddDbContext<CampeonatinhoDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<CampeonatinhoDbContext>(options => options.UseSqlServer(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -23,6 +24,7 @@ builder.Services.AddScoped<FootballApiRequestService>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
 builder.Services.AddScoped<IClubRepository, ClubRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -33,14 +35,14 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var apiService = services.GetRequiredService<FootballApiRequestService>();
-    var dbContextService = services.GetRequiredService<CampeonatinhoDbContext>();
+//using (var scope = app.Services.CreateScope())
+//{
+//    var services = scope.ServiceProvider;
+//    var apiService = services.GetRequiredService<FootballApiRequestService>();
+//    var dbContextService = services.GetRequiredService<CampeonatinhoDbContext>();
 
-    var jsonData = apiService.GetApiDataClubs();
-}
+//    var jsonData = apiService.GetApiDataClubs();
+//}
 
 //using (var scope = app.Services.CreateScope())
 //{

@@ -20,6 +20,11 @@ namespace CampeonatinhoApp.Repositories
             return await _dbSet.FindAsync(id);
         }
 
+        public async Task<T> GetByIdAsync(Guid id)
+        {
+            return await _dbSet.FindAsync(id.ToString());
+        }
+
         public async Task<IEnumerable<T>> GetAllAsync()
         {
             return await _dbSet.ToListAsync();

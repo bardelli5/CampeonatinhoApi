@@ -22,22 +22,15 @@ namespace CampeonatinhoApp.Controllers
         public ActionResult<IList<League>> GetAllLeagues()
         {
             var leagues = _leagueRepository.GetAllAsync().GetAwaiter().GetResult().ToList();
-            if (leagues == null || leagues.Count == 0)
-            {
-                return NotFound("No leagues found.");
-            }
-            return Ok(leagues);
+            return leagues == null ? NotFound("Leagues not founded.") : Ok(leagues);
         }
 
         [HttpGet("{id}")]
         public ActionResult<League> GetLeagueById(int id)
         {
             var league = _leagueRepository.GetByIdAsync(id).GetAwaiter().GetResult();
-            if (league == null)
-            {
-                return NotFound();
-            }
-            return Ok(league);
+
+            return league == null ? NotFound("League not found.") : Ok(league);
         }
 
     }
