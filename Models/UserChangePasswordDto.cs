@@ -12,5 +12,12 @@ namespace CampeonatinhoApp.Models
 
         [Required(ErrorMessage = "A nova senha é obrigatória.")]
         public string NewPassword { get; set; }
+
+        //[Required(ErrorMessage = "A confirmação da nova senha é obrigatória.")]
+        //[Compare("NewPassword", ErrorMessage = "A confirmação da nova senha não corresponde à nova senha.")]
+        //public string ConfirmNewPassword { get; set; }
+
+        public string Email { get; set; }
+
     }
 }
