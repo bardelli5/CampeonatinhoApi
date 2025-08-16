@@ -1,20 +1,13 @@
 using CampeonatinhoApp.Interfaces;
 using CampeonatinhoApp.Models;
+using CampeonatinhoApp.Models.DTOs;
 using CampeonatinhoApp.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Asn1;
 using Sprache;
-using System.Net;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Web;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace CampeonatinhoApp.Controllers
 {
@@ -22,12 +15,12 @@ namespace CampeonatinhoApp.Controllers
     [Route("[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly ILogger<UserProfileDto> _logger;
+        private readonly ILogger<UserProfileDTO> _logger;
         private readonly IUserRepository _userRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly EmailSenderService _emailSenderService;
 
-        public UserController(ILogger<UserProfileDto> logger, IUserRepository userRepository, UserManager<ApplicationUser> userManager, EmailSenderService emailSenderService)
+        public UserController(ILogger<UserProfileDTO> logger, IUserRepository userRepository, UserManager<ApplicationUser> userManager, EmailSenderService emailSenderService)
         {
             _logger = logger;
             _userRepository = userRepository;
@@ -36,21 +29,21 @@ namespace CampeonatinhoApp.Controllers
         }
 
         [HttpGet("all")]
-        public ActionResult<IList<UserProfileDto>> GetAllUsers()
+        public ActionResult<IList<UserProfileDTO>> GetAllUsers()
         {
             var users = _userManager.Users.ToList();
-            return users == null ? NotFound("Users not founded.") : Ok(users);
+            return users == null ? BadRequest("Invalid Request.") : Ok(users);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult> GetUserById(Guid id)
         {
             var users = await _userManager.FindByIdAsync(id.ToString());
-            return users == null ? NotFound("User not found.") : Ok(users);
+            return users == null ? BadRequest("Invalid Request.") : Ok(users);
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult> Register([FromBody] RegisterUserDto model)
+        public async Task<ActionResult> Register([FromBody] RegisterUserDTO model)
         {
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
@@ -91,37 +84,37 @@ namespace CampeonatinhoApp.Controllers
             }
         }
 
-        [HttpGet("confirmEmail")]
+        [HttpGet("confirmemail")]
         public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                return NotFound("User not found.");
+                return BadRequest("Invalid Request.");
             }
 
             var decodedToken = HttpUtility.UrlDecode(code);
             var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
             if (result.Succeeded)
             {
-                return Ok("Obrigado por confirmar seu e-mail. Sua conta agora está verificada!");
+                return Ok("Thank you for confirming your email. Your account is now verified!");
             }
 
-            return BadRequest("Não foi possível confirmar seu e-mail.");
+            return BadRequest("Could not confirm the email.");
         }
 
         [HttpPut("edit/{id}")]
-        public async Task<ActionResult> EditUser(Guid id, [FromBody] UserProfileDto model)
+        public async Task<ActionResult> EditUser(Guid id, [FromBody] UserProfileDTO model)
         {
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
             if (model.Id != id.ToString())
-            {return BadRequest("User ID mismatch.");}
+            { return BadRequest("User Id mismatch."); }
 
             var user = await _userManager.FindByIdAsync(model.Id.ToString());
             if (user == null)
             {
-                return NotFound("User not found.");
+                return BadRequest("Invalid Request.");
             }
 
             if (!string.IsNullOrWhiteSpace(model.FullName))
@@ -137,7 +130,7 @@ namespace CampeonatinhoApp.Controllers
                 user.Gender = model.Gender;
 
             if (model.FavoriteTeamId.HasValue)
-                user.FavoriteTeamId = (int)model.FavoriteTeamId;
+                user.FavoriteTeamId = (int) model.FavoriteTeamId;
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -146,65 +139,44 @@ namespace CampeonatinhoApp.Controllers
             return Ok(user);
         }
 
-        //[HttpPut("reset-password/{id}")]
-        //public async Task<ActionResult> ResetPassoword(Guid id, [FromBody] UserChangePasswordDto model, string token)
-        //{
-        //    var user = await _userManager.FindByEmailAsync(model.Email);
-        //    if (user == null)
-        //    {
-        //        return NotFound("There is no user with that email.");
-        //    }
+        [HttpPost("resetpassword")]
+        public async Task<ActionResult> ResetPassoword([FromBody] ForgotPasswordDTO model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
+                {
+                    return BadRequest("Invalid Request.");
+                }
+                var passwordToken = await _userManager.GeneratePasswordResetTokenAsync(user!);
+                var resetTokenUrl = Url.Action("ChangePassword", "User", new { UserId = user.Id, token = passwordToken }, protocol: Request.Scheme);
+                await _emailSenderService.SendEmailAsync(user.Email!, "Reset your Password", $"Please reset your password by clicking here: <a href='{HtmlEncoder.Default.Encode(resetTokenUrl)}'>link</a>");
+            }
 
-        //    var passwordToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            return Ok();
+        }
 
-        //    //if (!ModelState.IsValid)
-        //    //{ return BadRequest(ModelState); }
-        //    //if (model.Id != id)
-        //    //{ return BadRequest("User ID mismatch."); }
-
-        //    //var user = await _userManager.FindByIdAsync(model.Id.ToString());
-        //    //if (user == null)
-        //    //{
-        //    //    return NotFound("User not found.");
-        //    //}
-
-        //    //var result = await _userManager.ResetPasswordAsync(user, model.CurrentPassword, model.NewPassword);
-        //    //if (result.Succeeded)
-        //    //{
-        //    //    _logger.LogInformation($"Password for {user.UserName} changed.");
-        //    //    return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
-        //    //}
-        //    //else
-        //    //{
-        //    //    _logger.LogError($"Error changing password for {user.UserName}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-        //    //    return BadRequest(result.Errors);
-        //    //}
-        //}
-
-        [HttpPut("change-password/{id}")]
-        public async Task<ActionResult> ChangePassword(Guid id, [FromBody] UserChangePasswordDto model)
+        [HttpPut("changepassword")]
+        public async Task<ActionResult> ChangePassword([FromBody] UserChangePasswordDTO model)
         {
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
-            if (model.Id != id)
-            { return BadRequest("User ID mismatch."); }
 
-            var user = await _userManager.FindByIdAsync(model.Id.ToString());
+            var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                return NotFound("User not found.");
+                return BadRequest("Invalid Request.");
             }
-            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
-            if (result.Succeeded)
+
+            var decodedToken = HttpUtility.UrlDecode(model.Token);
+            var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
+            if (!result.Succeeded)
             {
-                _logger.LogInformation($"Password for {user.UserName} changed.");
-                return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+                var errors = result.Errors.Select(e => e.Description);
+                return BadRequest(new { Errors = errors });
             }
-            else
-            {
-                _logger.LogError($"Error changing password for {user.UserName}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                return BadRequest(result.Errors);
-            }
+            return Ok("Password reseted!");
         }
 
 
@@ -214,18 +186,12 @@ namespace CampeonatinhoApp.Controllers
             var user = await _userManager.FindByIdAsync(id.ToString());
             if (user == null)
             {
-                return NotFound("User not found.");
+                return BadRequest("Invalid Request.");
             }
 
             await _userManager.DeleteAsync(user);
             _logger.LogInformation($"User {user.UserName} successfully deleted.");
             return NoContent();
-        }
-
-        public void funcaoFodase(int numero)
-        {
-            numero = 22;
-            Console.WriteLine("numero da beca: " + numero);
         }
     }
 }

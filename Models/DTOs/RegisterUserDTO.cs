@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace CampeonatinhoApp.Models
+namespace CampeonatinhoApp.Models.DTOs
 {
-    public class RegisterUserDto
+    public class RegisterUserDTO
     {
         [Required(ErrorMessage = "O nome de usuário é obrigatório.")]
         public string UserName { get; set; }
 
         [Required(ErrorMessage = "O e-mail é obrigatório.")]
+        [EmailAddress]
         public string Email { get; set; }
 
         [Required(ErrorMessage = "A senha é obrigatória.")]

@@ -4,6 +4,7 @@ using CampeonatinhoApp.Interfaces;
 using CampeonatinhoApp.Models;
 using CampeonatinhoApp.Repositories;
 using CampeonatinhoApp.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +31,16 @@ builder.Services.AddScoped<EmailSenderService>();
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.SignIn.RequireConfirmedEmail = true;
+});
+
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+{
+    options.TokenLifespan = TimeSpan.FromHours(2);
+});
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.User.RequireUniqueEmail = true;
 });
 
 builder.Services.AddControllers();

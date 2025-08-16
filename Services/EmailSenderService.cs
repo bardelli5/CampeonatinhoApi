@@ -14,7 +14,7 @@ namespace CampeonatinhoApp.Services
 
         public Task SendEmailAsync(string to, string subject, string htmlMessage)
         {
-            //_logger.LogInformation($"Sending email to {to} with subject '{subject}' and body '{body}'");
+            _logger.LogInformation($"Sending email to {to}.");
 
             var email = new MimeMessage();
 
@@ -36,6 +36,7 @@ namespace CampeonatinhoApp.Services
                 smtp.Disconnect(true);
             }
 
+            _logger.LogInformation($"Email sent without errors.");
             return Task.CompletedTask;
         }
     }

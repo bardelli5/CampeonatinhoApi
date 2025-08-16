@@ -2,7 +2,7 @@
 
 namespace CampeonatinhoApp.Models
 {
-    public class UserProfileDto
+    public class UserProfileDTO
     {
         public string? Id { get; set; }
         public string? Email { get; set; }
