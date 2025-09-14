@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Sprache;
 using System.Text.Encodings.Web;
 using System.Web;
-using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace CampeonatinhoApp.Controllers
 {
@@ -72,7 +71,7 @@ namespace CampeonatinhoApp.Controllers
                     protocol: Request.Scheme
                     );
 
-                await _emailSenderService.SendEmailAsync(user.Email, "Confirme o seu email", $"Por favor, confirme sua conta em: <a href='{HtmlEncoder.Default.Encode(confirmationLink)}'>clicando aqui</a>.");
+                await _emailSenderService.SendEmailAsync(user.Email, "Confirm your Email", $"Please confirm your account by clicking here: <a href='{HtmlEncoder.Default.Encode(confirmationLink)}'>link</a>.");
 
                 _logger.LogInformation($"User {user.UserName} registered successfully.");
                 return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
