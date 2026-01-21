@@ -23,5 +23,8 @@ namespace CampeonatinhoApp.Models.DTOs
 
         [Required(ErrorMessage = "O time favorito é obrigatório.")]
         public int FavoriteTeamId { get; set; }
+
+        [Required]
+        public string[] Roles { get; set; }
     }
 }
