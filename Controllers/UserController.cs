@@ -1,14 +1,8 @@
 using CampeonatinhoApp.Interfaces;
 using CampeonatinhoApp.Models;
 using CampeonatinhoApp.Models.DTOs;
-using CampeonatinhoApp.Repositories;
-using CampeonatinhoApp.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Sprache;
-using System.Text.Encodings.Web;
-using System.Web;
 
 namespace CampeonatinhoApp.Controllers
 {
@@ -16,34 +10,26 @@ namespace CampeonatinhoApp.Controllers
     [Route("[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly ILogger<UserProfileDTO> _logger;
-        private readonly IUserRepository _userRepository;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly EmailSenderService _emailSenderService;
-        private readonly ITokenRepository _tokenRepository;
+        private readonly IUserService _userService;
 
-        public UserController(ILogger<UserProfileDTO> logger, IUserRepository userRepository, UserManager<ApplicationUser> userManager, EmailSenderService emailSenderService, ITokenRepository tokenRepository)
+        public UserController(IUserService userService)
         {
-            _logger = logger;
-            _userRepository = userRepository;
-            _userManager = userManager;
-            _emailSenderService = emailSenderService;
-            _tokenRepository = tokenRepository;
+            _userService = userService;
         }
 
         [HttpGet("all")]
         [Authorize(Roles = "Admin")]
-        public ActionResult<IList<UserProfileDTO>> GetAllUsers()
+        public async Task<ActionResult<IList<ApplicationUser>>> GetAllUsers()
         {
-            var users = _userManager.Users.ToList();
-            return users == null ? BadRequest("Invalid Request.") : Ok(users);
+            var users = await _userService.GetAllUsersAsync();
+            return Ok(users);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult> GetUserById(Guid id)
+        public async Task<ActionResult> GetUserById(string id)
         {
-            var users = await _userManager.FindByIdAsync(id.ToString());
-            return users == null ? BadRequest("Invalid Request.") : Ok(users);
+            var user = await _userService.GetUserByIdAsync(id);
+            return user == null ? BadRequest("Invalid Request.") : Ok(user);
         }
 
         [HttpPost("register")]
@@ -52,119 +38,67 @@ namespace CampeonatinhoApp.Controllers
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
 
-            var user = new ApplicationUser
+            var result = await _userService.RegisterAsync(model, (userId, code) =>
             {
-                UserName = model.UserName,
-                Email = model.Email,
-                FullName = model.FullName,
-                BirthDate = model.BirthDate,
-                Gender = model.Gender,
-                ChampionshipsPlayed = 0,
-                FavoriteTeamId = model.FavoriteTeamId, //id do spfc = 43
-                EmailConfirmed = false
-            };
-
-            var createdUser = await _userManager.CreateAsync(user, model.Password);
-            if (createdUser.Succeeded)
-            {
-                if (model.Roles != null && model.Roles.Any())
-                {
-                    await _userManager.AddToRolesAsync(user, model.Roles);
-                }
-
-                var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var confirmationLink = Url.Action(
+                return Url.Action(
                     "ConfirmEmail",
                     "User",
-                    new { userId = user.Id, code = code },
+                    new { userId = userId, code = code },
                     protocol: Request.Scheme
-                );
+                )!;
+            });
 
-                await _emailSenderService.SendEmailAsync(user.Email, "Confirm your Email", $"Please confirm your account by clicking here: <a href='{HtmlEncoder.Default.Encode(confirmationLink!)}'>link</a>.");
-
-                _logger.LogInformation($"User {user.UserName} registered successfully.");
-                return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+            if (result.Succeeded)
+            {
+                var user = await _userService.GetUserByIdAsync(model.UserName); 
+                return Ok("User registered successfully. Please check your email to confirm.");
             }
 
-            _logger.LogError($"Error registering user {user.UserName}: {string.Join(", ", createdUser.Errors.Select(e => e.Description))}");
-            return BadRequest(createdUser.Errors);
+            return BadRequest(result.Errors);
         }
 
         [HttpGet("confirmEmail")]
         public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return BadRequest("Invalid Request.");
-            }
-
-            var result = await _userManager.ConfirmEmailAsync(user, code);
+            var result = await _userService.ConfirmEmailAsync(userId, code);
             if (result.Succeeded)
             {
-                _logger.LogError($"Email confirmed.");
                 return Ok("Thank you for confirming your email. Your account is now verified!");
             }
-            _logger.LogError($"Could not confirm the email.");
 
             return BadRequest("Could not confirm the email.");
         }
 
         [HttpPut("edit/{id}")]
-        public async Task<ActionResult> EditUser(Guid id, [FromBody] UserProfileDTO model)
+        public async Task<ActionResult> EditUser(string id, [FromBody] UserProfileDTO model)
         {
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
-            if (model.Id != id.ToString())
-            { return BadRequest("User Id mismatch."); }
 
-            var user = await _userManager.FindByIdAsync(model.Id.ToString());
-            if (user == null)
-            {
-                return BadRequest("Invalid Request.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.FullName))
-                user.FullName = model.FullName;
-
-            if (!string.IsNullOrWhiteSpace(model.Email))
-                user.Email = model.Email;
-
-            if (model.BirthDate.HasValue)
-                user.BirthDate = model.BirthDate.Value;
-
-            if (!string.IsNullOrWhiteSpace(model.Gender))
-                user.Gender = model.Gender;
-
-            if (model.FavoriteTeamId.HasValue)
-                user.FavoriteTeamId = (int) model.FavoriteTeamId;
-
-            var result = await _userManager.UpdateAsync(user);
+            var result = await _userService.UpdateUserAsync(id, model);
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
 
-            _logger.LogInformation($"User {user.UserName} updated successfully.");
-            return Ok(user);
+            return Ok("User updated successfully.");
         }
 
         [HttpPost("forgotPassword")]
-        public async Task<ActionResult> ResetPassoword([FromBody] ForgotPasswordDTO model)
+        public async Task<ActionResult> ResetPassword([FromBody] ForgotPasswordDTO model)
         {
-            if (ModelState.IsValid)
-            {
-                var user = await _userManager.FindByEmailAsync(model.Email);
-                if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
-                {
-                    return BadRequest("Invalid Request.");
-                }
-                var passwordToken = await _userManager.GeneratePasswordResetTokenAsync(user!);
-                var resetTokenUrl = Url.Action("ChangePassword", "User", new { UserId = user.Id, token = passwordToken }, protocol: Request.Scheme);
-                await _emailSenderService.SendEmailAsync(user.Email!, "Reset your Password", $"Please reset your password by clicking here: <a href='{HtmlEncoder.Default.Encode(resetTokenUrl!)}'>link</a>");
+            if (!ModelState.IsValid)
+            { return BadRequest(ModelState); }
 
-                _logger.LogInformation($"Email to reset password sent.");
+            var result = await _userService.ForgotPasswordAsync(model.Email, (userId, token) =>
+            {
+                return Url.Action("ChangePassword", "User", new { UserId = userId, token = token }, protocol: Request.Scheme)!;
+            });
+
+            if (result.Succeeded)
+            {
+                return Ok("Email to reset password sent.");
             }
 
-            return Ok();
+            return BadRequest("Invalid Request.");
         }
 
         [HttpPut("changePassword")]
@@ -173,23 +107,13 @@ namespace CampeonatinhoApp.Controllers
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
 
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
-            {
-                return BadRequest("Invalid Request.");
-            }
-
-            var decodedToken = HttpUtility.UrlDecode(model.Token);
-            var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
+            var result = await _userService.ChangePasswordAsync(model);
             if (!result.Succeeded)
             {
-                var errors = result.Errors.Select(e => e.Description);
-                return BadRequest(new { Errors = errors });
+                return BadRequest(new { Errors = result.Errors.Select(e => e.Description) });
             }
 
-            _logger.LogInformation($"Password reseted.");
-
-            return Ok("Password reseted.");
+            return Ok("Password reset.");
         }
 
         [HttpPost("login")]
@@ -198,48 +122,30 @@ namespace CampeonatinhoApp.Controllers
             if (!ModelState.IsValid)
             { return BadRequest(ModelState); }
 
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user != null)
+            var (succeeded, token, errorMessage) = await _userService.LoginAsync(model);
+            if (succeeded)
             {
-                if (!user.EmailConfirmed)
-                {
-                    _logger.LogInformation($"User does not have a verified account.");
-
-                    return Forbid("The user does not have a verified account. Please verify it.");
-                }
-
-                var passwordValid = await _userManager.CheckPasswordAsync(user, model.Password);
-                if (passwordValid)
-                {
-                    var roles = await _userManager.GetRolesAsync(user);
-                    if (roles != null)
-                    {
-                        //cria o token jwt
-                        var jwtToken = _tokenRepository.CreateJwtToken(user, roles.ToList());
-                        _logger.LogInformation($"User logged in successfully.");
-
-                        return Ok(new { Token = jwtToken });
-                    }
-                }
+                return Ok(new { Token = token });
             }
-            _logger.LogInformation($"Invalid username or password.");
 
-            return Unauthorized("Invalid username or password.");
+            if (errorMessage == "The user does not have a verified account. Please verify it.")
+            {
+                return Forbid(errorMessage);
+            }
+
+            return Unauthorized(errorMessage);
         }
 
         [HttpDelete("delete/{id}")]
-        public async Task<ActionResult> DeleteUser(Guid id)
+        public async Task<ActionResult> DeleteUser(string id)
         {
-            var user = await _userManager.FindByIdAsync(id.ToString());
-            if (user == null)
+            var result = await _userService.DeleteUserAsync(id);
+            if (result.Succeeded)
             {
-                return BadRequest("Invalid Request.");
+                return NoContent();
             }
 
-            await _userManager.DeleteAsync(user);
-            _logger.LogInformation($"User {user.UserName} successfully deleted.");
-
-            return NoContent();
+            return BadRequest("Invalid Request.");
         }
     }
 }

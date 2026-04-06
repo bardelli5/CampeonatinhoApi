@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity;
-
-namespace CampeonatinhoApp.Models
+﻿namespace CampeonatinhoApp.Models
 {
-    public class UserProfileDTO
+    public class TournamentDTO
     {
+        public string? Id { get; set; }
         public string? Email { get; set; }
         public string? FullName { get; set; }
         public DateTime? BirthDate { get; set; }

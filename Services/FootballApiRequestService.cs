@@ -35,7 +35,7 @@ namespace CampeonatinhoApp.Services
             try
             {
                 var client = new RestClient("https://v3.football.api-sports.io/leagues");
-                var request = new RestRequest().AddHeader("x-rapidapi-key", "01ab0dce91ecea8d9923643ad0d75f4c").AddHeader("x-rapidapi-host", "v3.football.api-sports.io");
+                var request = new RestRequest().AddHeader("x-rapidapi-key", Environment.GetEnvironmentVariable("RapidAPI__Key")!).AddHeader("x-rapidapi-host", Environment.GetEnvironmentVariable("RapidAPI__Host")!);
                 var response = client.Execute(request);
 
                 string jsonLeague = response.Content;
@@ -78,7 +78,7 @@ namespace CampeonatinhoApp.Services
                     if (buscaClub == null)
                     {
                         var client = new RestClient($"https://v3.football.api-sports.io/teams?league={liga.ApiId}&season=2023");
-                        var request = new RestRequest().AddHeader("x-rapidapi-key", "01ab0dce91ecea8d9923643ad0d75f4c").AddHeader("x-rapidapi-host", "v3.football.api-sports.io");
+                        var request = new RestRequest().AddHeader("x-rapidapi-key", Environment.GetEnvironmentVariable("RapidAPI__Key")!).AddHeader("x-rapidapi-host", Environment.GetEnvironmentVariable("RapidAPI__Host")!);
                         var response = client.Execute(request);
 
                         string jsonLeague = response.Content;
@@ -114,7 +114,7 @@ namespace CampeonatinhoApp.Services
             try
             {
                 var client = new RestClient("https://v3.football.api-sports.io/countries");
-                var request = new RestRequest().AddHeader("x-rapidapi-key", "01ab0dce91ecea8d9923643ad0d75f4c").AddHeader("x-rapidapi-host", "v3.football.api-sports.io");
+                var request = new RestRequest().AddHeader("x-rapidapi-key", Environment.GetEnvironmentVariable("RapidAPI__Key")!).AddHeader("x-rapidapi-host", Environment.GetEnvironmentVariable("RapidAPI__Host")!);
                 var response = client.Execute(request);
 
                 string jsonCountry = response.Content;
