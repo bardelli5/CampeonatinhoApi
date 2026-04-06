@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using CampeonatinhoApp.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace CampeonatinhoApp.Models.DTOs
 {
@@ -19,7 +20,8 @@ namespace CampeonatinhoApp.Models.DTOs
 
         public DateTime? BirthDate { get; set; }
 
-        public string Gender { get; set; }
+        [EnumDataType(typeof(GenderType))]
+        public GenderType Gender { get; set; }
 
         [Required(ErrorMessage = "O time favorito é obrigatório.")]
         public int FavoriteTeamId { get; set; }
